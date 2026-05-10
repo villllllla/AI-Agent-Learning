@@ -13,10 +13,10 @@
 MCP是Anthropic在24年11月推出的模型上下文协议(Model Context Protocol)
 它要解决的核心问题：**把工具写好和用起来分离**
 
-![[智能OnCall/assets/什么是mcp/file-20260508081322106.jpg]]
+![[./assets/什么是mcp/file-20260508081322106.jpg]]
 **MCP 的诞生改变了这一切。** 它制定了一套统一的通信标准。只要数据源提供方写好了一个“MCP 服务器”（就像做了一个 USB-C 转换头），那么**任何支持 MCP 标准的大模型应用**（客户端），都可以直接插上去使用这个数据源，做到真正的**即插即用 (Plug-and-Play)**。
 ### MCP的三大角色
-![[智能OnCall/assets/什么是mcp/file-20260508081546139.jpg]]
+![[./assets/什么是mcp/file-20260508081546139.jpg]]
 MCP 采用了经典的 **客户端-服务器 (Client-Server)** 架构，它的结构极其精简而优雅，主要由以下核心部件构成：
 #### 1. 物理结构
 - **MCP Host（宿主应用）：** 比如 Claude Desktop 桌面端、或者你正在用的 IDE（如 Cursor、Windsurf）。这是用户直接交互的界面。
@@ -34,7 +34,7 @@ Function Calling 解决的问题是：大模型做出【要调用什么工具】
 MCP解决的问题是：工具怎么被统一注册、统一发现、统一调用。这是Agent和工具服务之间的连接协议，负责【Agent怎么找到并执行工具】这一段。
 两者的配合：
 
-![[智能OnCall/assets/什么是mcp/file-20260508084124200.jpg]]
+![[./assets/什么是mcp/file-20260508084124200.jpg]]
 
 ### MCP调用流程
 以【帮我查一下GitHub上React仓库最近的Commit】为例
