@@ -1,14 +1,14 @@
 ### 一、Claude Code是什么
 Agent核心就是【感知-决策-行动】的循环，输入一个目标，它会决定读什么文件，调用什么工具，跑什么脚本、修改哪行代码，整体行动会持续十几轮，直到任务执行完成。
 Claude Code的循环：
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520071736182.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520071736182.jpg)
 
 核心是**大模型自己决定**做什么
 
 ### 二、架构设计
 自主编程的Agent可以处理的事情非常多：调大模型API、执行几十种工具、管理权限、压缩上下文、维护记忆、支持多Agent协作等，如果全部塞到一个文件中，会非常混乱。
 Claude Code如何管理：四层架构
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520072105817.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520072105817.jpg)
 
 
 #### 引擎层
@@ -55,7 +55,7 @@ interface AgentTool {
 
 #### 什么是ReAct
 模型在每一轮过后输出一段【思考】，比如「我需要先读取 config.ts 文件来了解数据库连接配置」；然后选择一个工具调用（Action）；最后拿到工具结果（Observation）。这三步不断循环，直到模型认为任务完成。
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520074755248.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520074755248.jpg)
 
 #### ReAct的问题
 - 问题一：Token浪费。每轮都需要输出一段Think文本，这些文本是作为上下文发给大模型的，会造成额外的Token费用。对于编程Agent来说，一次任务可能需要循环50轮，每一轮都要经历这么一大段思考，会造成几万的Token 浪费。
@@ -66,13 +66,13 @@ interface AgentTool {
 
 #### Tool-Use Loop
 Claude Code使用的是Tool-Use Loop的模式，核心思路就是一个while循环：
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520083119639.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520083119639.jpg)
 
 模型在内部完成推理（Extended Thinking，Claude Opus的能力，在输出前在内部进行不可见的深度推理，不占用上下文空间），直接返回两种结果之一：
 - tool_use：需要执行某个工具，应用层执行工具，将结果拼接到消息列表，继续循环
 - end_turn：回答完毕，跳出循环，将结果返回给用户
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520083437792.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520083437792.jpg)
 
 设计的核心是：信任模型的推理能力，保持应用层框架的简洁性
 
@@ -111,17 +111,17 @@ Claude API原生支持tool_use，大模型直接返回tool_use类型的响应，
 ##### end_turn作为天生的终止信号
 ReAct需要一套额外的规则来判断输出是否结束，比如检测回答是否包含final_answer，Tool-Use Loop用模型的end_turn信号作为终止条件，是API层面的原语，不需要什么解释
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520084409130.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520084409130.jpg)
 
 #### Plan Mode
 **Tool-Use Loop** ：边想边做
 **Plan Mode**：先规划、再执行
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520084710900.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520084710900.jpg)
 
 **核心**：先规划，再执行，避免跑偏方向，浪费精力
 
 **实现**：在同一个 Tool-Use Loop 中通过 `EnterPlanMode` 和 `ExitPlanMode` 两个工具
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520084959131.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520084959131.jpg)
 
 
 - **第一步：模型自主进入或用户手动触发。** 当模型判断「这是一个复杂任务」时，它会调用 `EnterPlanMode` 工具。对于简单任务（修 typo、加 console.log），则明确不进入。用户也可以通过 Shift+Tab 手动切换。
@@ -135,7 +135,7 @@ ReAct需要一套额外的规则来判断输出是否结束，比如检测回答
 System Prompt是Claude Code的灵魂，定义Agent身份、行为规范、可用工具、安全约束
 
 但Claude Code的System Prompt不是一个静态的文本文件，它是动态组装的，由十几个Section构成的，在组装过程中做了非常精巧的缓存优化。
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520085404231.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520085404231.jpg)
 
 #### 角色定义与安全红线
 每个 Agent 的 System Prompt 都要回答一个根本问题：你是谁？Claude Code 的开场是这样的：
@@ -269,7 +269,7 @@ Claude Code 对模型的输出风格也有严格规定：
 **分割线之上的内容，对所有用户都完全一样。** 不管你是北京的 Java 工程师还是纽约的 Python 开发者，你看到的「角色定义」「行为准则」「Git 安全协议」这些内容是一模一样的。
 **分割线之下的内容，每个用户都不同。** 你的工作目录、你的 CLAUDE.md、你的记忆文件、你连接的 MCP 服务，这些是因人而异的。
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520090731668.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520090731668.jpg)
 为什么要这么分？因为 Claude API 有一个 **Prompt Cache** 机制：如果两次请求的 Prompt 前缀完全相同，API 会复用上次的计算结果，**费用可以降低 90%**。对于几万 Token 的 System Prompt 来说，缓存命中与否意味着每次请求几美分和几美元的差距。
 分割线之上的内容对所有用户都一样，所以可以**全球所有用户共享同一份缓存**——你用的和东京的开发者用的是同一份。而分割线之下的内容因人而异，没法共享，只能实时生成。
 这就是 Claude Code 的三级缓存体系：**全局缓存**（分割线之上，跨组织跨用户共享）→ **组织缓存**（同一组织内跨会话共享）→ **会话缓存**（同一个 Section 在一次会话内只计算一次）。每一级都在帮 API 省钱。
@@ -285,7 +285,7 @@ Claude Code 对模型的输出风格也有严格规定：
 
 ### 五、记忆系统
 每次启动 Claude Code 都是一个全新的会话，模型不记得上次对话的任何内容。但用户的偏好、项目背景、行为反馈，这些信息需要跨会话保持。
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520091206374.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520091206374.jpg)
 
 业界常见的方案是用向量数据库，把记忆存成 embedding，每次对话时做相似度检索。
 因为 Agent 需要记住的大部分不是「相似的文档片段」，而是「用户说过'不要 mock 数据库'」这种**结构化的行为指令**。用向量相似度去检索「不要 mock 数据库」这句话，效果其实很差，它可能匹配到一堆包含「数据库」关键词的无关内容，真正重要的行为反馈却被淹没了。
@@ -372,7 +372,7 @@ if (wasLineTruncated || wasByteTruncated) {
 它同时检查**行数**和**字节数**两个维度。为什么要两个？因为有人可能写了 199 行，每行 500 字，行数没超但字节数爆了。双重检查堵住了这个漏洞。
 
 现在来看整个存储架构的关键设计：**MEMORY.md 索引始终被加载到 System Prompt 里**，但独立记忆文件**按需加载**。
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520092128050.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520092128050.jpg)
 这解决了一个经典矛盾，如果把所有记忆都塞进 System Prompt，50 条记忆就可能占满上下文；如果完全不塞，Agent 又不知道有哪些记忆可用。
 
 索引文件两全其美：Agent 看到索引就知道有哪些记忆，但只加载真正相关的那几条。
@@ -381,7 +381,7 @@ if (wasLineTruncated || wasByteTruncated) {
 存好了记忆，关键问题来了：每次对话时，怎么从几十条记忆里挑出最相关的那几条加载进来？
 Claude Code 的做法非常巧妙，用一个廉价的小模型（Sonnet）来做记忆检索。
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520092212318.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520092212318.jpg)
 整个召回流程分为三步：
 第一步：扫描所有记忆文件的「头部信息」
 ```TypeScript
@@ -465,26 +465,26 @@ using pendingMemoryPrefetch = startRelevantMemoryPrefetch(
 )
 ```
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520092559474.jpg)
-Sonnet 比 Opus 快得多（延迟通常只有几百毫秒），所以等主模型的响应回来时，记忆选择早就完成了。整个记忆召回过程**几乎不增加任何额外延迟**。（[为什么可以第一次不注入记忆](AI-Agent-Learning/AI/为什么可以第一次不注入记忆)）
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520092559474.jpg)
+Sonnet 比 Opus 快得多（延迟通常只有几百毫秒），所以等主模型的响应回来时，记忆选择早就完成了。整个记忆召回过程**几乎不增加任何额外延迟**。（[为什么可以第一次不注入记忆](AI-Agent-Learning/AI零碎/为什么可以第一次不注入记忆.md)）
 还有一个小优化：如果用户当前正在使用某些工具（比如正在调用某个 MCP 工具），Sonnet 选择器会自动过滤掉该工具的使用文档类记忆，因为模型已经在用这个工具了，它的用法文档此刻是噪声，不是信号。
 但「该工具的已知 bug 和注意事项」类记忆仍然会被选中，**正在用的时候，恰恰是最需要知道坑在哪里的时候**。
 #### 小结
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520093054925.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520093054925.jpg)
 - 第一句是「记该记的，不记能推导的」。通过四类型封闭集合加上排除清单，把记忆控制在有价值的范围内，防止它膨胀成一个什么都往里塞的垃圾堆。
 - 第二句是「存索引，按需加载详情」。MEMORY.md 作为轻量索引始终常驻在 System Prompt 里，但每条记忆的具体内容是独立文件，用到的时候才加载。这样既让 Agent 知道有哪些记忆可用，又不会撑爆上下文。
 - 第三句是「用小模型做秘书，大模型做决策」。Sonnet 负责并行预取和选择记忆，Opus 只管做决策，加上陈旧度检测机制，实现了零延迟、低成本、高可靠。
 
 ### 六、上下文窗口管理
 大模型有上下文窗口限制。即使是 200K Token 的窗口，一次复杂的编程任务（读了几十个文件、执行了几十条命令）很容易就塞满了。
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520093540882.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520093540882.jpg)
 业界常见的做法是「简单截断」，只保留最近的 N 条消息，旧的扔掉。但这对于编程 Agent 来说是灾难性的：你可能 20 轮前读过一个关键配置文件，现在要改代码时那个文件的信息已经被截掉了，Agent 就会犯低级错误。
 另一种做法是「全量摘要」，把整段对话总结成一段摘要。但这很贵（摘要本身就是一次 API 调用），而且有信息损失。
 
 #### 压缩五步走
 Claude Code 的核心理念是：压缩一定有信息损失，所以能不压就不压，必须压的时候从最轻的手段开始。
 它设计了五个从轻到重的压缩手段，就像医院的分诊制度一样：先试最温和的，不行再上猛药。在每次 API 调用前依次尝试：
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520093611350.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520093611350.jpg)
 为什么要分五步，而不是一步到位做全量摘要？
 因为**每一步的「代价」是递增的**。
 - 第 1 层几乎没有信息损失，完整内容还在磁盘上，只是不在上下文里了。
@@ -560,7 +560,7 @@ const COMPACTABLE_TOOLS = new Set([
 **可以被裁剪的，都是「可重新获取」的工具**，Read 的结果可以再读一次，Bash 的输出可以再执行一次，搜索结果可以再搜一次。
 但 AgentTool（子 Agent 的输出）、TaskTool（任务状态）这类工具的结果**永远不会被裁剪**，因为子 Agent 的推理过程是不可重复的，砍掉就真的丢了。
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520094726755.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520094726755.jpg)
 
 具体裁剪逻辑是「保留最近 N 个，清理其余的」：
 ```TypeScript
@@ -591,7 +591,7 @@ export const TIME_BASED_MC_CLEARED_MESSAGE =
 问题是什么？ 经过前三层后，如果上下文还是太大，下一步就得做全量摘要了。
 但全量摘要代价很高（要额外调一次 API），而且会把整段对话的细节全部丢掉。有没有一个「中间态」，比全量摘要轻，但比 Micro-Compact 重？
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520094912343.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520094912343.jpg)
 
 **Claude Code 怎么做？** Context Collapse 引入了一个非常巧妙的概念，**读时投影（Read-Time Projection）**。
 什么意思呢？前面三层都是「写时压缩」，直接修改消息列表，把内容替换掉或删掉。但 Context Collapse 不修改原始消息，它只在**调用 API 的那一刻**，动态计算一个「压缩视图」给模型看。
@@ -647,14 +647,14 @@ export const POST_COMPACT_SKILLS_TOKEN_BUDGET = 25_000
 ```
 系统会从文件状态缓存（`fileStateCache`）中找出最近访问过的文件，按最后访问时间排序，挑选最多 5 个、总共不超过 50K Token 的文件内容重新注入。同时恢复活跃的 Skill（不超过 25K Token），如果有进行中的 Plan 也会恢复 Plan 文件。
 
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520095125897.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520095125897.jpg)
 
 为什么要做恢复？因为压缩后模型「失忆」了，它不记得刚才读过的文件内容了。
 如果不恢复，模型的第一反应就是「让我重新读一下文件」，白白浪费一轮工具调用。主动恢复最近的文件内容，可以让模型**无缝继续工作**，体验上几乎感觉不到压缩发生过。
 还有一个兜底机制：如果全量摘要连续失败 3 次（比如 API 超时），系统会自动放弃，不会无限重试，这就是**熔断器** 模式，防止一个失败的压缩操作拖垮整个 Agent。
 
 #### 小结
-![](AI-Agent-Learning/AI/assets/claude%20code核心架构/file-20260520095230869.jpg)
+![](AI-Agent-Learning/AI零碎/assets/claude%20code核心架构/file-20260520095230869.jpg)
 
 大部分场景下前三层就足够了，它们完全不需要额外的 API 调用，只是「搬运」和「裁剪」数据。只有在极端情况下，才需要触发昂贵的全量摘要。
 这种设计的另一个好处是**各层相互协调**。
